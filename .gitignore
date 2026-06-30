@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# 폰트 원본 폴더 (앱에서 사용하지 않음)
+fonts/KakaoBig OTF/
+
+# 기타
+*.log

@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>카카오페이 명함 웹용 이미지</title>
+
+  <!-- React 18 -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Babel Standalone (JSX) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    /* ───────────────────────────────────────────
+       KakaoBig OTF  —  font files 폴더 위치:
+       ./fonts/KakaoBigOTF-ExtraBold.otf
+       ./fonts/KakaoBigOTF-Bold.otf
+       ./fonts/KakaoBigOTF-Regular.otf
+    ─────────────────────────────────────────── */
+    @font-face {
+      font-family: 'KakaoBig';
+      src: url('./fonts/KakaoBig-ExtraBold.otf') format('opentype');
+      font-weight: 800; font-style: normal;
+    }
+    @font-face {
+      font-family: 'KakaoBig';
+      src: url('./fonts/KakaoBig-Bold.otf') format('opentype');
+      font-weight: 700; font-style: normal;
+    }
+    @font-face {
+      font-family: 'KakaoBig';
+      src: url('./fonts/KakaoBig-Regular.otf') format('opentype');
+      font-weight: 400; font-style: normal;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; background: #f0f0f0; }
+    body {
+      font-family: 'KakaoBig', 'Apple SD Gothic Neo', 'Noto Sans KR',
+        -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* ── Layout ── */
+    #root { display: flex; height: 100vh; overflow: hidden; }
+    .panel-left {
+      flex: 0 0 50%;
+      background: #D9D9D9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+      padding: 40px 20px;
+      gap: 0;
+    }
+    .panel-right {
+      flex: 0 0 50%;
+      background: #fff;
+      overflow-y: auto;
+      padding: 40px 52px 40px 52px;
+    }
+
+    /* ── Badge ── */
+    .badge-row { display: flex; gap: 8px; margin-bottom: 28px; align-self: flex-start; }
+    .badge {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .badge-preview { background: #1a1a1a; color: #fff; }
+    .badge-lang { background: #fff; color: #555; border: 1px solid #ccc; }
+
+    /* ── Card scale wrapper ── */
+    .card-scale-wrap {
+      transform-origin: top center;
+    }
+
+    /* ── Form ── */
+    .page-title {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #1a1a1a;
+      margin-bottom: 12px;
+    }
+    .page-desc {
+      font-size: 13.5px;
+      color: #555;
+      line-height: 1.45;
+      margin-bottom: 2px;
+    }
+    .page-desc a { color: #1a1a1a; font-weight: 700; }
+    .divider { height: 1px; background: #E5E7EB; margin: 20px 0 24px; }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 14px;
+    }
+
+    /* ── Segment tabs ── */
+    .seg-control {
+      display: flex;
+      background: #F3F4F6;
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+      width: fit-content;
+      margin-bottom: 24px;
+    }
+    .seg-btn {
+      padding: 8px 28px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #6B7280;
+      font-family: inherit;
+      transition: background 0.15s, color 0.15s;
+    }
+    .seg-btn.active { background: #fff; color: #1a1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+
+    /* ── Form grid ── */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+    .form-grid .col-2 { grid-column: 1 / -1; }
+    .form-grid .col-right { grid-column: 2 / 3; }
+
+    .field-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+    .field-label .optional {
+      font-weight: 400;
+      color: #9CA3AF;
+    }
+
+    .form-input {
+      width: 100%;
+      height: 42px;
+      border: 1px solid #E5E7EB;
+      border-radius: 6px;
+      padding: 0 12px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      background: #fff;
+      color: #1a1a1a;
+      transition: border-color 0.15s;
+    }
+    .form-input:focus { border-color: #1a1a1a; }
+    .form-input::placeholder { color: #9CA3AF; }
+
+    .email-wrap {
+      display: flex;
+      align-items: center;
+      border: 1px solid #E5E7EB;
+      border-radius: 6px;
+      background: #fff;
+      height: 42px;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .email-wrap:focus-within { border-color: #1a1a1a; }
+    .email-wrap input {
+      border: none; outline: none;
+      padding: 0 0 0 12px;
+      flex: 1; min-width: 0;
+      font-size: 14px;
+      font-family: inherit;
+      background: transparent;
+      color: #1a1a1a;
+    }
+    .email-wrap input::placeholder { color: #9CA3AF; }
+    .email-suffix {
+      padding: 0 12px;
+      font-size: 13px;
+      color: #6B7280;
+      white-space: nowrap;
+      border-left: 1px solid #E5E7EB;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      background: #F9FAFB;
+    }
+
+    .social-wrap {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .social-wrap .form-input { flex: 1; }
+    .social-at {
+      font-size: 18px;
+      font-weight: 600;
+      color: #6B7280;
+      flex-shrink: 0;
+    }
+
+    /* ── Tooltip ── */
+    .tip-wrap { position: relative; display: inline-flex; align-items: center; cursor: default; }
+    .tip-icon {
+      width: 15px; height: 15px;
+      background: #9CA3AF;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 9px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .tip-bubble {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a1a;
+      color: #fff;
+      font-size: 11.5px;
+      font-weight: 400;
+      padding: 5px 10px;
+      border-radius: 5px;
+      white-space: nowrap;
+      z-index: 200;
+      transition: opacity 0.15s;
+      pointer-events: none;
+    }
+    .tip-wrap:hover .tip-bubble { visibility: visible; opacity: 1; }
+
+    /* ── Radio character selector ── */
+    .char-grid {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .radio-opt {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+    }
+    .radio-opt input[type="radio"] {
+      width: 16px; height: 16px;
+      accent-color: #1a1a1a;
+      cursor: pointer;
+    }
+
+    /* ── Action buttons ── */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 28px;
+    }
+    .btn {
+      flex: 1;
+      height: 52px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.88; }
+    .btn:active { transform: scale(0.98); }
+    .btn-gray { background: #E5E7EB; color: #374151; }
+    .btn-yellow { background: #FFE100; color: #1a1a1a; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(26,26,26,0.88);
+      color: #fff;
+      padding: 10px 22px;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 9999;
+      animation: toast-up 0.2s ease-out;
+      pointer-events: none;
+    }
+    @keyframes toast-up {
+      from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* ── Card styles (used inside #export-target and .preview-card) ── */
+    .card-back {
+      width: 662px;
+      height: 400px;
+      background: #FFFFFF;
+      box-shadow: 2.643px 2.643px 5.285px rgba(0,0,0,0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    .card-front {
+      display: block;
+      width: 662px;
+      height: 400px;
+      box-shadow: 2.259px 2.259px 4.518px rgba(0,0,0,0.1);
+      border: none;
+      outline: none;
+    }
+    .name-underline-wrap {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+    }
+    .name-underline-bar {
+      position: absolute;
+      bottom: 1px;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background-color: #FFE100;
+      display: block;
+    }
+    .card-font {
+      font-family: 'KakaoBig', 'Apple SD Gothic Neo', 'Noto Sans KR',
+        -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* ── Export target (hidden, for PNG capture) ── */
+    #export-target {
+      position: fixed;
+      top: -9999px;
+      left: -9999px;
+      pointer-events: none;
+    }
+
+    /* ── Autocomplete dropdown ── */
+    .ac-wrap { position: relative; }
+    .ac-dropdown {
+      position: absolute;
+      top: calc(100% + 3px);
+      left: 0; right: 0;
+      z-index: 200;
+      background: #fff;
+      border: 1px solid #d1d5db;
+      border-radius: 7px;
+      max-height: 192px;
+      overflow-y: auto;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+      padding: 4px 0;
+    }
+    .ac-item {
+      padding: 7px 12px;
+      font-size: 13px;
+      line-height: 1.4;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ac-item:hover, .ac-item.ac-active { background: #FFFBE0; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<div id="export-target"></div>
+
+<script type="text/babel">
+const { useState, useRef, useCallback, useEffect } = React;
+
+// ─── Base64 image constants ───────────────────────────
+const IMG_CHOONSIK = './assets/choonsik.png';
+const IMG_MUZI     = './assets/muzi.png';
+const IMG_JORDY    = './assets/jordy.png';
+const IMG_RYAN     = './assets/ryan.png';
+const IMG_PAYLOGO  = './assets/paylogo.png';
+
+// ─── Static data ─────────────────────────────────────
+const CARD_W = 662;
+const CARD_H = 400;
+
+const KOR_ADDR_BOLD = '카카오페이 ';
+const KOR_ADDR_REST = '(13529) 경기도 성남시 분당구 판교역로 166 카카오판교아지트 B동 15F';
+const ENG_ADDR_BOLD = 'Kakao Pay Corp.';
+const ENG_ADDR_LINE1 = '15F B, 166 Pangyoyeok-ro, Bundang-gu,';
+const ENG_ADDR_LINE2 = 'Seongnam-si, Gyeonggi-do, 13529, Korea';
+
+const CHARACTERS = [
+  { id: 'none',      label: '추가 안함' },
+  { id: 'choonsik', label: '춘식이'   },
+  { id: 'jordy',    label: '조르디'   },
+  { id: 'muzi',     label: '무지'     },
+  { id: 'ryan',     label: '라이언'   },
+];
+
+const CHAR_IMG = { choonsik: IMG_CHOONSIK, muzi: IMG_MUZI, jordy: IMG_JORDY, ryan: IMG_RYAN };
+
+const CARD_FONT = "'KakaoBig', 'Apple SD Gothic Neo', 'Noto Sans KR', -apple-system, sans-serif";
+
+// ─── Tooltip ─────────────────────────────────────────
+function Tip({ text }) {
+  return (
+    <span className="tip-wrap">
+      <span className="tip-icon">i</span>
+      <span className="tip-bubble">{text}</span>
+    </span>
+  );
+}
+
+// ─── Field ───────────────────────────────────────────
+function Field({ label, optional, tip, children }) {
+  return (
+    <div>
+      <div className="field-label">
+        {label}
+        {optional && <span className="optional">(Optional)</span>}
+        {tip && <Tip text={tip} />}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ─── Card Back (뒷면 정보) ──────────────────────────
+function CardBackContent({ lang, data }) {
+  const isKor = lang === 'kor';
+
+  const { nameMain, nameSub, jobTitle, dept, phone, extension, emailLdap,
+          nameKor, socialPlatform, socialId } = data;
+
+  const contactLines = [];
+  if (isKor) {
+    if (phone)                         contactLines.push(phone);
+    if (extension)                     contactLines.push(extension);
+    if (emailLdap)                     contactLines.push(emailLdap + '@kakaopaycorp.com');
+  } else {
+    if (phone)                         contactLines.push(phone);
+    if (emailLdap)                     contactLines.push(emailLdap + '@kakaopaycorp.com');
+    if (socialPlatform && socialId)    contactLines.push(socialPlatform + ' @' + socialId);
+  }
+
+  const PLACEHOLDER_COLOR = '#BFBFBF';
+  const TEXT_COLOR        = '#000';
+
+  const rightLeft = isKor ? 265 : 255;
+  const addrFs    = isKor ? 16   : 14.5;
+  const addrLh    = isKor ? '24px' : '19px';
+  const addrTop   = isKor ? 320  : 314;
+
+  // sub-name variants  
+  const nameSubDisplay = isKor ? nameSub : (nameSub || nameKor ? [nameSub, nameKor].filter(Boolean).join('\n') : '');
+
+  return (
+    <div className="card-back card-font">
+
+      {/* ─ Left block: Name ─ */}
+      <div style={{ position: 'absolute', left: 37.58, top: 38.26, width: 185 }}>
+        {/* name-main */}
+        <div className="name-underline-wrap">
+          <span className="name-underline-bar" />
+          <div
+            style={{
+              position: 'relative',
+              fontWeight: 800,
+              fontSize: 26,
+              lineHeight: '32px',
+              letterSpacing: '-0.52px',
+              color: nameMain ? TEXT_COLOR : PLACEHOLDER_COLOR,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              fontFamily: CARD_FONT,
+            }}
+          >
+            {nameMain || (isKor ? '홍길동' : 'Nickname')}
+          </div>
+        </div>
+
+        {/* name-sub */}
+        <div
+          style={{
+            marginTop: 5,
+            fontWeight: 700,
+            fontSize: 18,
+            lineHeight: '26px',
+            letterSpacing: '-0.36px',
+            color: (isKor ? nameSub : (nameSub || nameKor)) ? TEXT_COLOR : PLACEHOLDER_COLOR,
+            fontFamily: CARD_FONT,
+            wordBreak: 'break-word',
+            whiteSpace: 'pre-wrap',
+          }}
+        >
+          {nameSubDisplay || (isKor ? 'Choonsik' : 'Choonsik Kim')}
+        </div>
+      </div>
+
+      {/* ─ Right block: Job & Dept ─ */}
+      <div
+        style={{
+          position: 'absolute',
+          left: rightLeft,
+          top: 40.26,
+          right: 24,
+          fontWeight: 700,
+          fontSize: 18,
+          lineHeight: '26px',
+          letterSpacing: '-0.36px',
+          color: (jobTitle || dept) ? TEXT_COLOR : PLACEHOLDER_COLOR,
+          fontFamily: CARD_FONT,
+          wordBreak: 'break-word',
+        }}
+      >
+        {jobTitle ? <div>{jobTitle}</div> : <div>{isKor ? '직함' : 'Job Title'}</div>}
+        {dept     ? <div>{dept}</div>     : <div>{isKor ? '부서명' : 'Department'}</div>}
+      </div>
+
+      {/* ─ Right block: Contact ─ */}
+      <div
+        style={{
+          position: 'absolute',
+          left: rightLeft,
+          top: 154,
+          right: 24,
+          fontWeight: 700,
+          fontSize: 18,
+          lineHeight: '26px',
+          letterSpacing: '-0.36px',
+          color: contactLines.length > 0 ? TEXT_COLOR : PLACEHOLDER_COLOR,
+          fontFamily: CARD_FONT,
+        }}
+      >
+        {contactLines.length > 0
+          ? contactLines.map((line, i) => <div key={i}>{line}</div>)
+          : <>
+              <div>{isKor ? '010.0000.0000' : '+82.10.0000.0000'}</div>
+              <div>example@kakaopaycorp.com</div>
+            </>
+        }
+      </div>
+
+      {/* ─ Pay logo ─ */}
+      <img
+        src={IMG_PAYLOGO}
+        alt="Kakao Pay"
+        style={{
+          position: 'absolute',
+          left: 37.88,
+          top: 313,
+          width: 120.92,
+          height: 50,
+          objectFit: 'contain',
+          imageRendering: 'auto',
+        }}
+      />
+
+      {/* ─ Address ─ */}
+      <div
+        style={{
+          position: 'absolute',
+          left: rightLeft,
+          top: addrTop,
+          right: 20,
+          fontSize: addrFs,
+          lineHeight: addrLh,
+          letterSpacing: '-0.16px',
+          color: TEXT_COLOR,
+          fontFamily: CARD_FONT,
+          wordBreak: 'keep-all',
+        }}
+      >
+        {isKor ? (
+          <span>
+            <span style={{ fontWeight: 700 }}>{KOR_ADDR_BOLD}</span>
+            <span style={{ fontWeight: 400 }}>{KOR_ADDR_REST}</span>
+          </span>
+        ) : (
+          <>
+            <div style={{ fontWeight: 700 }}>{ENG_ADDR_BOLD}</div>
+            <div style={{ fontWeight: 400 }}>
+              {ENG_ADDR_LINE1}<br />
+              {ENG_ADDR_LINE2}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── AutocompleteInput ────────────────────────────────
+function AutocompleteInput({ value, onChange, onSelect, suggestions, placeholder, className }) {
+  const [open, setOpen] = React.useState(false);
+  const [activeIdx, setActiveIdx] = React.useState(-1);
+  const wrapRef = React.useRef(null);
+
+  const filtered = React.useMemo(() => {
+    if (!value.trim()) return [];
+    const q = value.toLowerCase();
+    return suggestions.filter(s => s.toLowerCase().includes(q)).slice(0, 20);
+  }, [value, suggestions]);
+
+  React.useEffect(() => {
+    const handler = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleSelect = (val) => {
+    onChange(val);
+    onSelect && onSelect(val);
+    setOpen(false);
+    setActiveIdx(-1);
+  };
+
+  const handleKeyDown = (e) => {
+    if (!open || filtered.length === 0) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx(i => Math.min(i + 1, filtered.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIdx(i => Math.max(i - 1, 0)); }
+    else if (e.key === 'Enter' && activeIdx >= 0) { e.preventDefault(); handleSelect(filtered[activeIdx]); }
+    else if (e.key === 'Escape') setOpen(false);
+  };
+
+  return (
+    <div className="ac-wrap" ref={wrapRef}>
+      <input
+        className={className}
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); setActiveIdx(-1); }}
+        onFocus={() => { if (value.trim()) setOpen(true); }}
+        onKeyDown={handleKeyDown}
+      />
+      {open && filtered.length > 0 && (
+        <ul className="ac-dropdown">
+          {filtered.map((item, i) => (
+            <li
+              key={item}
+              className={`ac-item${i === activeIdx ? ' ac-active' : ''}`}
+              onMouseDown={(e) => { e.preventDefault(); handleSelect(item); }}
+            >
+              {item}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// ─── Korean Form ──────────────────────────────────────
+function KorForm({ data, onChange, deptList, onDeptSelect }) {
+  const set = (key) => (e) => onChange({ ...data, [key]: e.target.value });
+  return (
+    <div className="form-grid">
+      <Field label="한글 이름 (main)">
+        <input className="form-input" value={data.nameMain} onChange={set('nameMain')} />
+      </Field>
+      <Field label="대외 직함" tip="매니저 / 개발자 / 디자이너">
+        <input className="form-input" value={data.jobTitle} onChange={set('jobTitle')} />
+      </Field>
+
+      <Field label="영문 크루 닉네임 (sub)" tip="ex. Rina, Daisy, River">
+        <input className="form-input" value={data.nameSub} onChange={set('nameSub')}
+               placeholder="ex. Phillip" />
+      </Field>
+      <Field label="부서명" tip="겹직은 ',(쉼표)'로 구분">
+        <AutocompleteInput
+          className="form-input"
+          value={data.dept}
+          onChange={(val) => onChange({ ...data, dept: val })}
+          onSelect={onDeptSelect}
+          suggestions={deptList}
+        />
+      </Field>
+
+      <div />
+      <Field label="전화번호" tip="010.1234.1234">
+        <input className="form-input" value={data.phone} onChange={set('phone')}
+               placeholder="010.0000.0000" />
+      </Field>
+
+      <div />
+      <Field label="내선번호" optional tip="031.1234.1234">
+        <input className="form-input" value={data.extension} onChange={set('extension')}
+               placeholder="031.0000.0000" />
+      </Field>
+
+      <div className="col-2">
+        <Field label="이메일 (LDAP 입력)">
+          <div className="email-wrap">
+            <input value={data.emailLdap} onChange={set('emailLdap')}
+                   placeholder="your.name" />
+            <span className="email-suffix">@kakaopaycorp.com</span>
+          </div>
+        </Field>
+      </div>
+    </div>
+  );
+}
+
+// ─── English Form ─────────────────────────────────────
+function EngForm({ data, onChange, deptList }) {
+  const set = (key) => (e) => onChange({ ...data, [key]: e.target.value });
+  return (
+    <div className="form-grid">
+      <Field label="영어 닉네임 (main)">
+        <input className="form-input" value={data.nameMain} onChange={set('nameMain')} />
+      </Field>
+      <Field label="영어 대외 직함" tip="겹직은 ',(쉼표)'로 구분">
+        <input className="form-input" value={data.jobTitle} onChange={set('jobTitle')} />
+      </Field>
+
+      <Field label="영어 풀네임 (sub)" tip="ex. Choonsik Kim">
+        <input className="form-input" value={data.nameSub} onChange={set('nameSub')}
+               placeholder="ex. Choonsik Kim" />
+      </Field>
+      <Field label="영어 부서명" tip="겹직은 ',(쉼표)'로 구분">
+        <AutocompleteInput
+          className="form-input"
+          value={data.dept}
+          onChange={(val) => onChange({ ...data, dept: val })}
+          suggestions={deptList}
+        />
+      </Field>
+
+      <Field label="한글 이름" optional tip="ex. 김춘식">
+        <input className="form-input" value={data.nameKor || ''} onChange={set('nameKor')}
+               placeholder="ex. 김춘식" />
+      </Field>
+      <Field label="전화번호 (국가번호 함께 기입)" tip="ex. +82.010.1234.1234">
+        <input className="form-input" value={data.phone} onChange={set('phone')}
+               placeholder="+82.10.0000.0000" />
+      </Field>
+
+      <div className="col-2">
+        <Field label="이메일 (LDAP 입력)">
+          <div className="email-wrap">
+            <input value={data.emailLdap} onChange={set('emailLdap')}
+                   placeholder="your.name" />
+            <span className="email-suffix">@kakaopaycorp.com</span>
+          </div>
+        </Field>
+      </div>
+
+      <div className="col-2">
+        <Field label="소셜 플랫폼 아이디" optional tip="Telegram, WhatsApp 등">
+          <div className="social-wrap">
+            <input className="form-input" value={data.socialPlatform || ''}
+                   onChange={set('socialPlatform')}
+                   placeholder="Telegram 등 플랫폼 입력" />
+            <span className="social-at">@</span>
+            <input className="form-input" value={data.socialId || ''}
+                   onChange={set('socialId')}
+                   placeholder="아이디 입력" />
+          </div>
+        </Field>
+      </div>
+    </div>
+  );
+}
+
+// ─── Export helpers ───────────────────────────────────
+async function captureCardPng(cardEl) {
+  // Wait for fonts
+  await document.fonts.ready;
+  const canvas = await html2canvas(cardEl, {
+    scale: 2,
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: null,
+    logging: false,
+    imageTimeout: 5000,
+  });
+  return canvas;
+}
+
+// ─── App ──────────────────────────────────────────────
+function App() {
+  const [lang, setLang] = useState('kor');
+  const [character, setCharacter] = useState('none');
+  const [toast, setToast] = useState(null);
+
+  const [korData, setKorData] = useState({
+    nameMain: '', nameSub: '', jobTitle: '', dept: '',
+    phone: '', extension: '', emailLdap: '',
+  });
+  const [engData, setEngData] = useState({
+    nameMain: '', nameSub: '', jobTitle: '', dept: '',
+    nameKor: '', phone: '', emailLdap: '',
+    socialPlatform: '', socialId: '',
+  });
+
+  const [deptData, setDeptData] = useState({ kor: [], eng: [], mapping: {} });
+
+  useEffect(() => {
+    const parseList = (text) => text.trim().split('\n').slice(1).map(l => l.trim()).filter(Boolean);
+    Promise.all([
+      fetch('./data/departments_kor.csv').then(r => r.text()),
+      fetch('./data/departments_eng.csv').then(r => r.text()),
+      fetch('./data/departments_mapping.csv').then(r => r.text()),
+    ]).then(([korText, engText, mapText]) => {
+      const kor = parseList(korText);
+      const eng = parseList(engText);
+      const mapping = {};
+      mapText.trim().split('\n').slice(1).forEach(line => {
+        const comma = line.indexOf(',');
+        if (comma === -1) return;
+        const k = line.slice(0, comma).trim();
+        const e = line.slice(comma + 1).trim();
+        if (k && e) mapping[k] = e;
+      });
+      setDeptData({ kor, eng, mapping });
+    }).catch(() => {});
+  }, []);
+
+  const handleKorDeptSelect = useCallback((korDept) => {
+    const engDept = deptData.mapping[korDept];
+    if (engDept) setEngData(prev => ({ ...prev, dept: engDept }));
+  }, [deptData.mapping]);
+
+  const exportRef = useRef(null);
+
+  const showToast = useCallback((msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2200);
+  }, []);
+
+  const currentData = lang === 'kor' ? korData : engData;
+  const setCurrentData = lang === 'kor' ? setKorData : setEngData;
+
+  const getExportName = () => {
+    const name = currentData.nameMain || '명함';
+    return `${name}_명함.png`;
+  };
+
+  // ── PNG 저장 ──
+  const handleSave = async () => {
+    const el = exportRef.current;
+    if (!el) return;
+    try {
+      const canvas = await captureCardPng(el);
+      await new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (!blob) { reject(new Error('toBlob failed')); return; }
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = getExportName();
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          resolve();
+        }, 'image/png');
+      });
+    } catch (e) {
+      showToast('저장 중 오류가 발생했습니다.');
+      console.error(e);
+    }
+  };
+
+  // ── 클립보드 복사 ──
+  const handleCopy = () => {
+    const el = exportRef.current;
+    if (!el) return;
+    // Pass a Promise to ClipboardItem so navigator.clipboard.write is called
+    // synchronously within the user-gesture context (avoids permission expiry).
+    const imagePromise = captureCardPng(el).then(
+      (canvas) => new Promise((resolve, reject) =>
+        canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('toBlob failed')), 'image/png')
+      )
+    );
+    navigator.clipboard.write([new ClipboardItem({ 'image/png': imagePromise })])
+      .then(() => showToast('이미지가 클립보드에 복사되었습니다 ✓'))
+      .catch(() => showToast('클립보드 복사를 지원하지 않는 브라우저입니다.'));
+  };
+
+  // ── Gmail 새 메일 ──
+  const handleMail = () => {
+    window.open(
+      'https://mail.google.com/mail/u/0/?tab=rm&ogbl#inbox?compose=new',
+      '_blank'
+    );
+  };
+
+  return (
+    <>
+      {/* ─── Left: Preview ─── */}
+      <div className="panel-left">
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
+          {/* Badges */}
+          <div className="badge-row" style={{ alignSelf: 'flex-start' }}>
+            <span className="badge badge-preview">Preview</span>
+            <span className="badge badge-lang">{lang === 'kor' ? '국문' : '영문'}</span>
+          </div>
+
+          {/* Card stack — this is the export target */}
+          <div ref={exportRef} style={{ display: 'inline-flex', flexDirection: 'column', gap: 0 }}>
+            <CardBackContent lang={lang} data={currentData} />
+            {character !== 'none' && (
+              <img
+                src={CHAR_IMG[character]}
+                alt={character}
+                className="card-front"
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Right: Form ─── */}
+      <div className="panel-right">
+        <h1 className="page-title">카카오페이 명함 웹용 이미지</h1>
+        <p className="page-desc">- 외부 공유용 (문자나 카톡으로 거래처 명함 전달 시) 명함 이미지를 제작합니다.</p>
+        <p className="page-desc">- 수정이 필요한 정보를 변경하고, 저장 버튼을 선택하세요.</p>
+        <p className="page-desc">
+          - 실물 명함 제작은 <a href="https://kakaopay.agit.in/g/300013048/wall/451220144" target="_blank" rel="noopener noreferrer">아지트</a>에서 신청 가능합니다.
+        </p>
+
+        <div className="divider" />
+
+        {/* 뒷면 정보 */}
+        <p className="section-title">명함 뒷면 정보</p>
+
+        {/* Segment */}
+        <div className="seg-control">
+          {['kor', 'eng'].map(l => (
+            <button
+              key={l}
+              className={`seg-btn${lang === l ? ' active' : ''}`}
+              onClick={() => setLang(l)}
+            >
+              {l === 'kor' ? '국문' : '영문'}
+            </button>
+          ))}
+        </div>
+
+        {lang === 'kor'
+          ? <KorForm data={korData} onChange={setKorData} deptList={deptData.kor} onDeptSelect={handleKorDeptSelect} />
+          : <EngForm data={engData} onChange={setEngData} deptList={deptData.eng} />
+        }
+
+        <div className="divider" style={{ marginTop: 28 }} />
+
+        {/* 앞면 캐릭터 */}
+        <p className="section-title">명함 앞면 이미지 추가</p>
+        <div className="char-grid">
+          {CHARACTERS.map(c => (
+            <label key={c.id} className="radio-opt">
+              <input
+                type="radio"
+                name="character"
+                value={c.id}
+                checked={character === c.id}
+                onChange={() => setCharacter(c.id)}
+              />
+              {c.label}
+            </label>
+          ))}
+        </div>
+
+        {/* 버튼 */}
+        <div className="btn-row">
+          <button className="btn btn-yellow" onClick={handleSave}>PNG로 저장</button>
+          <button className="btn btn-yellow" onClick={handleCopy}>이미지 복사</button>
+          <button className="btn btn-gray" onClick={handleMail}>메일 보내기</button>
+        </div>
+      </div>
+
+      {/* Toast */}
+      {toast && <div className="toast">{toast}</div>}
+    </>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
