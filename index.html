@@ -378,6 +378,54 @@
       text-overflow: ellipsis;
     }
     .ac-item:hover, .ac-item.ac-active { background: #FFFBE0; }
+
+    /* ── Mobile action row (desktop: hidden) ── */
+    .btn-row-mobile { display: none; }
+
+    /* ─────────────────────────────────────────────
+       Responsive — 767px 이하 (모바일)
+    ───────────────────────────────────────────── */
+    @media (max-width: 767px) {
+      #root {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+      }
+      .panel-left {
+        order: 2;
+        flex: none;
+        width: 100%;
+        padding: 20px 16px 24px;
+        min-height: auto;
+        justify-content: flex-start;
+      }
+      .panel-right {
+        order: 1;
+        flex: none;
+        width: 100%;
+        padding: 24px 16px 20px;
+        overflow: visible;
+      }
+      .panel-right .btn-row { display: none; }
+      .btn-row-mobile {
+        display: flex;
+        flex-direction: column;
+        order: 3;
+        width: 100%;
+        padding: 8px 16px 32px;
+        gap: 10px;
+        background: #fff;
+      }
+      .btn-row-mobile .btn { flex: none; }
+      .page-title { font-size: 18px; margin-bottom: 8px; }
+      .page-desc { font-size: 12.5px; }
+      .seg-control { width: 100%; }
+      .seg-btn { flex: 1; padding: 8px 0; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid .col-right { grid-column: 1; }
+      .badge-row { margin-bottom: 16px; }
+    }
   </style>
 </head>
 <body>
@@ -841,6 +889,18 @@ function App() {
 
   const exportRef = useRef(null);
 
+  const [cardScale, setCardScale] = useState(1);
+  useEffect(() => {
+    const updateScale = () => {
+      setCardScale(window.innerWidth <= 767
+        ? Math.min(1, (window.innerWidth - 32) / CARD_W)
+        : 1);
+    };
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, []);
+
   const showToast = useCallback((msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2200);
@@ -915,17 +975,32 @@ function App() {
             <span className="badge badge-lang">{lang === 'kor' ? '국문' : '영문'}</span>
           </div>
 
-          {/* Card stack — this is the export target */}
-          <div ref={exportRef} style={{ display: 'inline-flex', flexDirection: 'column', gap: 0 }}>
-            <CardBackContent lang={lang} data={currentData} />
-            {character !== 'none' && (
-              <img
-                src={CHAR_IMG[character]}
-                alt={character}
-                className="card-front"
-              />
-            )}
-          </div>
+          {/* Scaled preview (visual only) */}
+          {(() => {
+            const totalH = character !== 'none' ? CARD_H * 2 : CARD_H;
+            return (
+              <div style={{
+                width: Math.round(CARD_W * cardScale),
+                height: Math.round(totalH * cardScale),
+                overflow: 'hidden',
+                flexShrink: 0,
+                position: 'relative',
+              }}>
+                <div style={{
+                  transform: `scale(${cardScale})`,
+                  transformOrigin: 'top left',
+                  display: 'inline-flex',
+                  flexDirection: 'column',
+                  gap: 0,
+                }}>
+                  <CardBackContent lang={lang} data={currentData} />
+                  {character !== 'none' && (
+                    <img src={CHAR_IMG[character]} alt={character} className="card-front" />
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
@@ -980,11 +1055,28 @@ function App() {
           ))}
         </div>
 
-        {/* 버튼 */}
+        {/* 버튼 — 데스크톱에서 표시, 모바일에서 숨김 */}
         <div className="btn-row">
           <button className="btn btn-yellow" onClick={handleSave}>PNG로 저장</button>
           <button className="btn btn-yellow" onClick={handleCopy}>이미지 복사</button>
           <button className="btn btn-gray" onClick={handleMail}>메일 보내기</button>
+        </div>
+      </div>
+
+      {/* 버튼 — 모바일 전용 (미리보기 카드 아래) */}
+      <div className="btn-row btn-row-mobile">
+        <button className="btn btn-yellow" onClick={handleSave}>PNG로 저장</button>
+        <button className="btn btn-yellow" onClick={handleCopy}>이미지 복사</button>
+        <button className="btn btn-gray" onClick={handleMail}>메일 보내기</button>
+      </div>
+
+      {/* 숨김 export 대상: html2canvas 캡처용 (1:1 배율 고정) */}
+      <div style={{ position: 'fixed', top: -9999, left: -9999, pointerEvents: 'none' }}>
+        <div ref={exportRef} style={{ display: 'inline-flex', flexDirection: 'column', gap: 0 }}>
+          <CardBackContent lang={lang} data={currentData} />
+          {character !== 'none' && (
+            <img src={CHAR_IMG[character]} alt={character} className="card-front" />
+          )}
         </div>
       </div>
 
